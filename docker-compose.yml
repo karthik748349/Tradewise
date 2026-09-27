@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tradewise-postgres
+    environment:
+      POSTGRES_DB: tradewise
+      POSTGRES_USER: tradewise
+      POSTGRES_PASSWORD: tradewise
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradewise -d tradewise"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tradewise-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    container_name: tradewise-backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/tradewise
+      DB_USERNAME: tradewise
+      DB_PASSWORD: tradewise
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AI_SERVICE_URL: http://ai-service:8000
+      JWT_SECRET: TradeWiseDevelopmentSecretKeyChangeMe123456789
+      JWT_EXPIRATION: 86400000  
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ai-service:
+        condition: service_started
+
+  ai-service:
+    build: ./ai-service
+    container_name: tradewise-ai
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: tradewise-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
