@@ -6,23 +6,28 @@ server:
 spring:
   application:
     name: tradewise-backend
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/tradewise}
     username: ${DB_USERNAME:tradewise}
     password: ${DB_PASSWORD:tradewise}
+
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      jwt:
+
+jwt:
   secret: ${JWT_SECRET:TradeWiseDevelopmentSecretKeyChangeMe123456789}
   expiration: ${JWT_EXPIRATION:86400000}
-  environment:
-  TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+
+turnstile:
+  secret-key: ${TURNSTILE_SECRET_KEY}
 
 management:
   endpoints:

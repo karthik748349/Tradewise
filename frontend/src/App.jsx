@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 
 
 import {
@@ -32,6 +31,9 @@ import axios from "axios";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Portfolio from "./pages/Portfolio";
+import Orders from "./pages/Orders";
+import Journal from "./pages/Journal";
 import authService from "./services/authService";
 
 /* =========================================================
@@ -42,6 +44,8 @@ const nav = [
   ["Dashboard", Home],
   ["Markets", TrendingUp],
   ["Portfolio", BriefcaseBusiness],
+  ["Orders", BriefcaseBusiness],
+  ["Journal", BookOpen],
   ["Watchlist", Star],
   ["News", Newspaper],
   ["AI Tutor", Bot],
@@ -97,6 +101,18 @@ function ProtectedRoute() {
 ========================================================= */
 
 function App() {
+  const location = useLocation();
+
+  // Render Journal directly for /journal so it cannot fall through
+  // to the dashboard fallback route.
+  if (location.pathname === "/journal" || location.pathname.startsWith("/journal/")) {
+    if (!authService.isAuthenticated()) {
+      return <Navigate to="/login" replace />;
+    }
+
+    return <Journal />;
+  }
+
   return (
     <Routes>
 
@@ -130,12 +146,17 @@ function App() {
 
         <Route
           path="/portfolio"
-          element={
-            <PlaceholderPage
-              title="Portfolio"
-              description="Your holdings and portfolio analytics will appear here."
-            />
-          }
+          element={<Portfolio />}
+        />
+
+        <Route
+          path="/orders"
+          element={<Orders />}
+        />
+
+        <Route
+          path="/journal/*"
+          element={<Journal />}
         />
 
         <Route
@@ -229,6 +250,10 @@ function Dashboard() {
 
   const [apiStatus, setApiStatus] = useState("Checking…");
 
+  const [portfolio, setPortfolio] = useState(null);
+
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+
   const user = authService.getUser();
 
   const displayName =
@@ -253,6 +278,34 @@ function Dashboard() {
   }, []);
 
 
+  /* ================= PORTFOLIO DATA ================= */
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setPortfolioLoading(false);
+      return;
+    }
+
+    axios
+      .get("http://localhost:8081/api/portfolio", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        setPortfolio(response.data);
+      })
+      .catch((error) => {
+        console.error("Failed to load portfolio:", error);
+      })
+      .finally(() => {
+        setPortfolioLoading(false);
+      });
+  }, []);
+
+
   /* ================= ACTIVE PAGE ================= */
 
   useEffect(() => {
@@ -265,6 +318,8 @@ function Dashboard() {
       setActive("Markets");
     } else if (path === "/portfolio") {
       setActive("Portfolio");
+    } else if (path === "/journal") {
+      setActive("Journal");
     } else if (path === "/watchlist") {
       setActive("Watchlist");
     } else if (path === "/news") {
@@ -288,6 +343,8 @@ function Dashboard() {
       Dashboard: "/dashboard",
       Markets: "/markets",
       Portfolio: "/portfolio",
+      Orders: "/orders",
+      Journal: "/journal",
       Watchlist: "/watchlist",
       News: "/news",
       "AI Tutor": "/ai-tutor",
@@ -540,22 +597,42 @@ function Dashboard() {
 
             <Metric
               title="Portfolio value"
-              value="₹10,00,000"
-              change="+₹12,480"
+              value={
+                portfolioLoading
+                  ? "Loading..."
+                  : portfolio
+                    ? `₹${Number(portfolio.portfolioValue).toLocaleString("en-IN")}`
+                    : "—"
+              }
+              change="Current portfolio value"
               positive
             />
 
             <Metric
               title="Today's P&L"
-              value="+₹4,820"
-              change="+0.48%"
+              value="₹0"
+              change="No trades yet"
               positive
             />
 
             <Metric
               title="Available cash"
-              value="₹7,64,200"
-              change="76.4% of capital"
+              value={
+                portfolioLoading
+                  ? "Loading..."
+                  : portfolio
+                    ? `₹${Number(portfolio.availableCash).toLocaleString("en-IN")}`
+                    : "—"
+              }
+              change={
+                portfolio
+                  ? `${(
+                      (Number(portfolio.availableCash) /
+                        Number(portfolio.initialCapital)) *
+                      100
+                    ).toFixed(1)}% of capital`
+                  : "Current available cash"
+              }
             />
 
             <Metric
@@ -1026,6 +1103,8 @@ function PlaceholderPage({
                   Dashboard: "/dashboard",
                   Markets: "/markets",
                   Portfolio: "/portfolio",
+                  Orders: "/orders",
+                  Journal: "/journal",
                   Watchlist: "/watchlist",
                   News: "/news",
                   "AI Tutor": "/ai-tutor",
