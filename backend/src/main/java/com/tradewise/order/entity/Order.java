@@ -68,6 +68,14 @@ public class Order {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal totalAmount;
 
+    // Stop-loss price for this trade
+    @Column(precision = 19, scale = 4)
+    private BigDecimal stopLoss;
+
+    // Target price for this trade
+    @Column(precision = 19, scale = 4)
+    private BigDecimal targetPrice;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -128,6 +136,14 @@ public class Order {
         return totalAmount;
     }
 
+    public BigDecimal getStopLoss() {
+        return stopLoss;
+    }
+
+    public BigDecimal getTargetPrice() {
+        return targetPrice;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -158,5 +174,13 @@ public class Order {
 
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public void setStopLoss(BigDecimal stopLoss) {
+        this.stopLoss = stopLoss;
+    }
+
+    public void setTargetPrice(BigDecimal targetPrice) {
+        this.targetPrice = targetPrice;
     }
 }

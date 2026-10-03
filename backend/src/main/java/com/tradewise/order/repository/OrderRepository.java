@@ -10,6 +10,8 @@ public interface OrderRepository
 
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    List<Order> findByUserIdOrderByCreatedAtAsc(Long userId);
+
     List<Order> findByUserIdAndInstrumentIdOrderByCreatedAtDesc(
             Long userId,
             Long instrumentId

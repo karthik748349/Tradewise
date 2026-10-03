@@ -33,10 +33,12 @@ services:
       REDIS_PORT: 6379
       AI_SERVICE_URL: http://ai-service:8000
       JWT_SECRET: TradeWiseDevelopmentSecretKeyChangeMe123456789
-      JWT_EXPIRATION: 86400000  
+      JWT_EXPIRATION: 86400000
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
     ports:
       - "8081:8081"
+    volumes:
+      - ./backend/uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,7 +46,6 @@ services:
         condition: service_started
       ai-service:
         condition: service_started
-
   ai-service:
     build: ./ai-service
     container_name: tradewise-ai

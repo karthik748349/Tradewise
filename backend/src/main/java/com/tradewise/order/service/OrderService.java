@@ -74,14 +74,23 @@ public class OrderService {
             );
         }
 
-        MarketPrice marketPrice = getLatestPrice(instrument.getId());
+        MarketPrice marketPrice =
+                getLatestPrice(instrument.getId());
 
-        BigDecimal executionPrice = marketPrice.getClosePrice();
+        BigDecimal executionPrice =
+                marketPrice.getClosePrice();
 
         BigDecimal totalAmount =
                 executionPrice.multiply(
                         BigDecimal.valueOf(request.getQuantity())
                 );
+
+        // Validate Stop Loss and Target
+        validateRiskLevels(
+                executionPrice,
+                request.getStopLoss(),
+                request.getTargetPrice()
+        );
 
         Portfolio portfolio =
                 portfolioRepository.findByUserId(user.getId())
@@ -98,11 +107,13 @@ public class OrderService {
         }
 
         portfolio.setAvailableCash(
-                portfolio.getAvailableCash().subtract(totalAmount)
+                portfolio.getAvailableCash()
+                        .subtract(totalAmount)
         );
 
         portfolio.setInvestedAmount(
-                portfolio.getInvestedAmount().add(totalAmount)
+                portfolio.getInvestedAmount()
+                        .add(totalAmount)
         );
 
         Holding holding =
@@ -126,7 +137,8 @@ public class OrderService {
         } else {
 
             int oldQuantity = holding.getQuantity();
-            int newQuantity = oldQuantity + request.getQuantity();
+            int newQuantity =
+                    oldQuantity + request.getQuantity();
 
             BigDecimal newInvestedAmount =
                     holding.getInvestedAmount()
@@ -146,6 +158,7 @@ public class OrderService {
 
         holdingRepository.save(holding);
 
+        // Create BUY order
         Order order =
                 new Order(
                         user,
@@ -156,7 +169,12 @@ public class OrderService {
                         totalAmount
                 );
 
-        Order savedOrder = orderRepository.save(order);
+        // Save Stop Loss and Target
+        order.setStopLoss(request.getStopLoss());
+        order.setTargetPrice(request.getTargetPrice());
+
+        Order savedOrder =
+                orderRepository.save(order);
 
         portfolioRepository.save(portfolio);
 
@@ -228,7 +246,8 @@ public class OrderService {
                         ));
 
         portfolio.setAvailableCash(
-                portfolio.getAvailableCash().add(totalAmount)
+                portfolio.getAvailableCash()
+                        .add(totalAmount)
         );
 
         portfolio.setInvestedAmount(
@@ -236,12 +255,17 @@ public class OrderService {
                         .subtract(costOfSoldShares)
         );
 
-        if (portfolio.getInvestedAmount().compareTo(BigDecimal.ZERO) < 0) {
-            portfolio.setInvestedAmount(BigDecimal.ZERO);
+        if (portfolio.getInvestedAmount()
+                .compareTo(BigDecimal.ZERO) < 0) {
+
+            portfolio.setInvestedAmount(
+                    BigDecimal.ZERO
+            );
         }
 
         int remainingQuantity =
-                holding.getQuantity() - request.getQuantity();
+                holding.getQuantity()
+                        - request.getQuantity();
 
         if (remainingQuantity == 0) {
 
@@ -258,7 +282,9 @@ public class OrderService {
                             );
 
             holding.setQuantity(remainingQuantity);
-            holding.setInvestedAmount(remainingInvestedAmount);
+            holding.setInvestedAmount(
+                    remainingInvestedAmount
+            );
 
             holdingRepository.save(holding);
         }
@@ -321,6 +347,31 @@ public class OrderService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Quantity must be greater than zero"
+            );
+        }
+    }
+
+    private void validateRiskLevels(
+            BigDecimal executionPrice,
+            BigDecimal stopLoss,
+            BigDecimal targetPrice
+    ) {
+
+        if (stopLoss != null &&
+                stopLoss.compareTo(executionPrice) >= 0) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Stop loss must be below the entry price for a BUY order"
+            );
+        }
+
+        if (targetPrice != null &&
+                targetPrice.compareTo(executionPrice) <= 0) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Target price must be above the entry price for a BUY order"
             );
         }
     }

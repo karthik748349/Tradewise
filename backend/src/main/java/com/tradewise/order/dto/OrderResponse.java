@@ -20,6 +20,9 @@ public class OrderResponse {
     private BigDecimal executionPrice;
     private BigDecimal totalAmount;
 
+    private BigDecimal stopLoss;
+    private BigDecimal targetPrice;
+
     private LocalDateTime createdAt;
 
     public OrderResponse() {
@@ -35,6 +38,8 @@ public class OrderResponse {
             Integer quantity,
             BigDecimal executionPrice,
             BigDecimal totalAmount,
+            BigDecimal stopLoss,
+            BigDecimal targetPrice,
             LocalDateTime createdAt
     ) {
         this.id = id;
@@ -46,6 +51,8 @@ public class OrderResponse {
         this.quantity = quantity;
         this.executionPrice = executionPrice;
         this.totalAmount = totalAmount;
+        this.stopLoss = stopLoss;
+        this.targetPrice = targetPrice;
         this.createdAt = createdAt;
     }
 
@@ -61,6 +68,8 @@ public class OrderResponse {
                 order.getQuantity(),
                 order.getExecutionPrice(),
                 order.getTotalAmount(),
+                order.getStopLoss(),
+                order.getTargetPrice(),
                 order.getCreatedAt()
         );
     }
@@ -99,6 +108,14 @@ public class OrderResponse {
 
     public BigDecimal getTotalAmount() {
         return totalAmount;
+    }
+
+    public BigDecimal getStopLoss() {
+        return stopLoss;
+    }
+
+    public BigDecimal getTargetPrice() {
+        return targetPrice;
     }
 
     public LocalDateTime getCreatedAt() {
